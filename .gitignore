@@ -127,5 +127,7 @@ dmypy.json
 
 EURUSD1m.csv
 MockData.csv
+LRM_results.csv
+LSTM_results.csv
 # Pyre type checker
 .pyre/
