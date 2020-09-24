@@ -126,5 +126,6 @@ venv.bak/
 dmypy.json
 
 EURUSD1m.csv
+MockData.csv
 # Pyre type checker
 .pyre/
