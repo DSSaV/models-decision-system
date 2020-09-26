@@ -33,6 +33,8 @@ Each model should be able to:
 
 This project will include the ability to run models in an ensemble, which means that the models will have their results compared against eachother so that the result isn't affected by a single models outlier value.
 
+The models in the ensemble will be able to be freely chosen between all the available models.
+
 ## Decisions
 
 Our plan is to implement a decision system which buys when the value is at the expected lowest, and holds until the values reach the highest point, at which point it then sells. One way we can succeed in this is by looking at the momentum of the forecasted values and compare them against the Close price.
