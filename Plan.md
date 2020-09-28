@@ -1,4 +1,4 @@
-#Model & Decisions
+# Model & Decisions
 
 This part of the project is composed of creating the models and making a decision based on the output of the models.
 It should be able to succeed in the following tasks:
