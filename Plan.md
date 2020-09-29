@@ -15,7 +15,7 @@ Out initial plan is to implement the following models.
 - Linear Regression
 - Forrest
 - LSTM
-- TCNN
+- [TCNN](https://github.com/philipperemy/keras-tcn)
 - Cross Validation SVR
 - Log Regression
 - Cross Validation SVC
