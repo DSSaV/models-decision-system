@@ -41,6 +41,50 @@ def linear_regression(data, settings):
     }
 
 
+def add_layer(model, data, index, name, settings):
+    # AVAILABLE LSTM LAYERS
+    available = {
+        'lstm': LSTM,
+        'dropout': Dropout,
+        'dense': Dense
+    }
+
+    # SELECT THE CORRECT FUNCTION
+    func = available[name]
+
+    # IF AN ACTIVATION IS FOUND & THIS IS THE FIRST LAYER
+    if 'activation' in settings and index == 0:
+        model.add(func(
+            settings['value'],
+            activation=settings['activation'],
+            input_shape=(data['train']['features'].shape[1], 1)
+        ))
+
+    # JUST AN ACTIVATION FUNCTION
+    elif 'activation' in settings:
+        model.add(func(
+            settings['value'],
+            activation=settings['activation']
+        ))
+
+    # OTHERWISE, DEFAULT TO JUST USING THE VALUE
+    else:
+        model.add(func(
+            settings['value']
+        ))
+
+
+def add_layers(model, data, settings):
+    # LOOP THROUGH REQUESTED MODEL LAYERS
+    for index, layer in enumerate(settings['layers']):
+        # LAYER PROPS
+        name = list(layer)[0]
+        params = layer[name]
+
+        # GENERATE & ADD THE LAYER
+        add_layer(model, data, index, name, params)
+
+
 def long_short_term_memory(data, settings):
     """Creates a Long short-term memory model (LSTM) and predictions.
 
@@ -56,9 +100,58 @@ def long_short_term_memory(data, settings):
     #  INSTANTIATE MODEL
     model = Sequential()
 
-    denormalized_predictions = ""
+    #  ADDING LAYERS TO MODEL
+    add_layers(model, data, settings)
+
+        # COMPILE THE MODEL
+    model.compile(
+        loss=settings['loss'],
+        optimizer=settings['optimizer']
+    )
+
+    # COMPILE THE MODEL
+    model.compile(
+        loss=settings['loss'],
+        optimizer=settings['optimizer']
+    )
+
+    # TRAIN USING TRAIN DATA
+    model.fit(
+        data['train']['features'],
+        data['train']['labels'],
+        epochs=settings['epochs'],
+        batch_size=settings['batch'],
+
+        # VALIDATION_SPLIT WORKS NORMALLY, BUT SUCKS FOR TIMESERIES
+        # https://www.tensorflow.org/tutorials/structured_data/time_series
+        # goal https://miro.medium.com/max/300/1*R09z6KNJuMkSmRcPApj9cQ.png
+
+        # ADD VALIDATION DATA
+        validation_data=(
+            data['validation']['features'],
+            data['validation']['labels']
+        ),
+
+        # VALIDATE EVERY 25 STEPS
+        validation_steps=settings['validation']
+    )
+
+    # PREDICT USING TEST DATA
+    predictions = model.predict(data['test']['features'])
+    #denormalized_predictions = ""
 
     return {
         'model': model,
-        'predictions': denormalized_predictions
+        'predictions': predictions
     }
+
+
+def train_model(dataset, name, settings):
+    # AVAILABLE MODELS
+    model = {
+        'linreg': linear_regression,
+        'lstm': long_short_term_memory
+    }
+
+    # SELECT THE CORRECT FUNCTION & START
+    return model[name](dataset, settings)
