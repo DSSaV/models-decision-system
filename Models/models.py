@@ -31,12 +31,13 @@ def linear_regression(data, settings):
     #  PREDICTIONS
     predictions = model.predict(x_test)
 
+    # TODO: fix denormalization
     #  DENORMALIZED PREDICTIONS FOR ACTUAL PREDICTION VALUES
-    denormalized_predictions = scaler.inverse_transform(predictions)
+    #denormalized_predictions = scaler.inverse_transform(predictions)
 
     return {
         'model': model,
-        'predictions': denormalized_predictions
+        'predictions': predictions
     }
 
 
