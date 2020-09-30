@@ -129,5 +129,8 @@ EURUSD1m.csv
 MockData.csv
 LRM_results.csv
 LSTM_results.csv
+
+# PyCharm
+.idea/
 # Pyre type checker
 .pyre/
