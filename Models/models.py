@@ -150,17 +150,35 @@ def long_short_term_memory(data, settings):
 def temporal_convolutional_network(data, settings):
 
     #  VARIABLES
-    batch_size, timesteps, input_dim = None, 20, 1
+    batch_size = settings['batch']
+    timesteps = 14
+    input_dim = len(data['train']['features'])
     x_train = data['train']['features']
     y_train = data['train']['labels']
-    # x_validation = data['validation']['features']
-    # y_validation = data['validation']['labels']
+    x_validation = data['validation']['features']
+    y_validation = data['validation']['labels']
     x_test = data['test']['features']
     scaler = data['scaler']
 
-    i = Input(batch_shape=(batch_size, timesteps, input_dim))
+    model_input = Input(batch_shape=(batch_size, timesteps, input_dim))
 
-    pass
+    model_output = TCN(return_sequences=False)(model_input)  # The TCN layers are here.
+    model_output = Dropout(0.15)(model_output)
+    model_output = Dense(50)(model_output)
+    model_output = Dense(1)(model_output)
+
+    model = Model(inputs=[model_input], outputs=[model_output])
+    model.compile(optimizer='adam', loss='mse')
+
+    model.fit(x_train, y_train, epochs=settings['epochs'], validation_data=(x_validation, y_validation))
+    #  https://keras.io/api/models/model_training_apis/#fit-method
+
+    predictions = model.predict(x_test)
+
+    return {
+        'model': model,
+        'predictions': predictions
+    }
 
 
 def train_model(dataset, name, settings):

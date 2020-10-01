@@ -79,10 +79,11 @@ ensemble:
             optimizer: adam
         - tcn:
             split:
-                train: 0.8
+                train: 0.6
                 test: 0.2
+                validation: 0.2
             layers:
-                - tcnn:
+                - tcn:
                     value: 10
                     activation: relu
                 - dropout:
