@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.linear_model import LinearRegression
 import tensorflow as tf
-from tensorflow.python.keras import Sequential
+from tensorflow.python.keras import Sequential, Input, Model
 from tensorflow.python.keras.layers import Dense, LSTM, Dropout
 from tcn import TCN
 
@@ -42,7 +42,7 @@ def linear_regression(data, settings):
 
 
 def add_layer(model, data, index, name, settings):
-    # AVAILABLE LSTM LAYERS
+    # AVAILABLE LAYERS
     available = {
         'lstm': LSTM,
         'dropout': Dropout,
@@ -147,11 +147,28 @@ def long_short_term_memory(data, settings):
     }
 
 
+def temporal_convolutional_network(data, settings):
+
+    #  VARIABLES
+    batch_size, timesteps, input_dim = None, 20, 1
+    x_train = data['train']['features']
+    y_train = data['train']['labels']
+    # x_validation = data['validation']['features']
+    # y_validation = data['validation']['labels']
+    x_test = data['test']['features']
+    scaler = data['scaler']
+
+    i = Input(batch_shape=(batch_size, timesteps, input_dim))
+
+    pass
+
+
 def train_model(dataset, name, settings):
     # AVAILABLE MODELS
     model = {
         'linreg': linear_regression,
-        'lstm': long_short_term_memory
+        'lstm': long_short_term_memory,
+        'tcn': temporal_convolutional_network
     }
 
     # SELECT THE CORRECT FUNCTION & START
