@@ -1,9 +1,18 @@
-import numpy as np
+
 from sklearn.linear_model import LinearRegression
-import tensorflow as tf
+from sklearn.svm import LinearSVC
+
+#  TODO: REMOVE LATER IF NOT NEEDED
+from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import TimeSeriesSplit
+import numpy as np
+from sklearn import preprocessing
+from sklearn import utils
+
 from tensorflow.python.keras import Sequential, Input, Model
 from tensorflow.python.keras.layers import Dense, LSTM, Dropout
-from tcn import TCN
+
+from tcn import TCN, tcn_full_summary
 
 
 def linear_regression(data, settings):
@@ -33,7 +42,7 @@ def linear_regression(data, settings):
 
     # TODO: fix denormalization
     #  DENORMALIZED PREDICTIONS FOR ACTUAL PREDICTION VALUES
-    #denormalized_predictions = scaler.inverse_transform(predictions)
+    # denormalized_predictions = scaler.inverse_transform(predictions)
 
     return {
         'model': model,
@@ -41,7 +50,7 @@ def linear_regression(data, settings):
     }
 
 
-def add_layer(model, data, index, name, settings):
+def add_lstm_layer(model, data, index, name, settings):
     # AVAILABLE LAYERS
     available = {
         'lstm': LSTM,
@@ -74,7 +83,7 @@ def add_layer(model, data, index, name, settings):
         ))
 
 
-def add_layers(model, data, settings):
+def add_lstm_layers(model, data, settings):
     # LOOP THROUGH REQUESTED MODEL LAYERS
     for index, layer in enumerate(settings['layers']):
         # LAYER PROPS
@@ -82,7 +91,7 @@ def add_layers(model, data, settings):
         params = layer[name]
 
         # GENERATE & ADD THE LAYER
-        add_layer(model, data, index, name, params)
+        add_lstm_layer(model, data, index, name, params)
 
 
 def long_short_term_memory(data, settings):
@@ -107,7 +116,7 @@ def long_short_term_memory(data, settings):
     model = Sequential()
 
     #  ADDING LAYERS TO MODEL
-    add_layers(model, data, settings)
+    add_lstm_layers(model, data, settings)
 
     # COMPILE THE MODEL
     model.compile(
@@ -139,7 +148,7 @@ def long_short_term_memory(data, settings):
     # PREDICT USING TEST DATA
     predictions = model.predict(x_test)
 
-    #denormalized_predictions = ""
+    # denormalized_predictions = ""
 
     return {
         'model': model,
@@ -147,38 +156,90 @@ def long_short_term_memory(data, settings):
     }
 
 
+def add_base_layer_to_tcn(name, model_output, settings, index):
+    # AVAILABLE LAYERS
+    available = {
+        'dropout': Dropout,
+        'dense': Dense
+    }
+
+    # SELECT THE CORRECT FUNCTION
+    func = available[name]
+
+    if name == 'dropout':
+        return func(settings['value'])(model_output)
+
+    else:
+        return func(settings['value'])(model_output)
+
+
+def add_tcn_layers(model_input, settings):
+    model_output = TCN(return_sequences=False)(model_input)
+
+    for index, layer in enumerate(settings['layers']):
+
+        # LAYER PROPS
+        name = list(layer)[0]
+        params = layer[name]
+
+        if index == 0:
+            continue
+        else:
+            model_output = add_base_layer_to_tcn(name, model_output, params, index)
+
+    return model_output
+
+
+#  TODO: WORKING BUT NEEDS TO BE TWEAKED
 def temporal_convolutional_network(data, settings):
+    """Creates a Temporal Convolutional Network model (TCN) and predictions.
+
+        Args:
+            data: pandas.DataFrame.
+            settings: Dictionary object containing settings parameters.
+        Returns:
+            A dictionary containing the TCN model and predictions.
+        """
 
     #  VARIABLES
-    batch_size = settings['batch']
-    timesteps = 14
-    input_dim = len(data['train']['features'])
     x_train = data['train']['features']
     y_train = data['train']['labels']
     x_validation = data['validation']['features']
     y_validation = data['validation']['labels']
     x_test = data['test']['features']
     scaler = data['scaler']
+    timesteps = x_train.shape[0]
+    input_dim = x_train.shape[1]
+    batch_size = settings['batch']
 
-    model_input = Input(batch_shape=(batch_size, timesteps, input_dim))
+    #  INSTANTIATE KERAS TENSOR WITH Input()
+    #  model_input = Input(batch_shape=(batch_size, timesteps, input_dim)) input from example
+    model_input = Input(shape=(input_dim, 1))  # TODO: double check Input() not sure it is correct
 
-    model_output = TCN(return_sequences=False)(model_input)  # The TCN layers are here.
-    model_output = Dropout(0.15)(model_output)
-    model_output = Dense(50)(model_output)
-    model_output = Dense(1)(model_output)
+    #  INSTANTIATE
+    model_output = add_tcn_layers(model_input, settings)
 
+    #  INSTANTIATE MODEL AND ASSIGN INPUT AND OUTPUT
     model = Model(inputs=[model_input], outputs=[model_output])
+
+    # COMPILE THE MODEL
     model.compile(optimizer='adam', loss='mse')
 
+    #  PRINT MODEL STATS
+    tcn_full_summary(model, expand_residual_blocks=False)
+
+    #  TRAIN THE MODEL WITH VALIDATION
     model.fit(x_train, y_train, epochs=settings['epochs'], validation_data=(x_validation, y_validation))
     #  https://keras.io/api/models/model_training_apis/#fit-method
 
+    # PREDICT USING TEST DATA
     predictions = model.predict(x_test)
 
     return {
         'model': model,
         'predictions': predictions
     }
+
 
 def linear_support_vector_classifier(data, settings):
     """Creates a Linear Support Vector Classifier (Linear SVC) and predictions.
@@ -189,8 +250,8 @@ def linear_support_vector_classifier(data, settings):
     Returns:
         A dictionary containing the Linear SVC model and predictions.
     """
-    
-     #  VARIABLES
+
+    #  VARIABLES
     x_train = data['train']['features']
     y_train = data['train']['labels']
     x_test = data['test']['features']
@@ -198,10 +259,10 @@ def linear_support_vector_classifier(data, settings):
 
     # INSTANTIATE MODEL
     model = LinearSVC()
-    
+
     # CREATE PREDICTIONS USING TRAIN DATA
     model.fit(x_train, y_train)
-    
+
     # PREDICTIONS
     predictions = model.predict(x_test)
 
@@ -216,7 +277,8 @@ def train_model(dataset, name, settings):
     model = {
         'linreg': linear_regression,
         'lstm': long_short_term_memory,
-        'tcn': temporal_convolutional_network
+        'tcn': temporal_convolutional_network,
+        'svc': linear_support_vector_classifier
     }
 
     # SELECT THE CORRECT FUNCTION & START

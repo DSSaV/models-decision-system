@@ -51,7 +51,7 @@ ensemble:
                     activation: relu
                 - dense:
                     value: 1
-            epochs: 20
+            epochs: 7
             batch: 8
             validation: 25
             loss: mean_squared_error
@@ -93,7 +93,7 @@ ensemble:
                     activation: relu
                 - dense:
                       value: 1
-            epochs: 10
+            epochs: 7
             batch: 4
             validation: 40
             loss: mean_squared_error
