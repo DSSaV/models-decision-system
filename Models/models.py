@@ -209,21 +209,22 @@ def temporal_convolutional_network(data, settings):
     x_test = data['test']['features']
     scaler = data['scaler']
     timesteps = x_train.shape[0]
-    input_dim = x_train.shape[1]
+    input_dim_x = x_train.shape[1]
+    input_dim_y = x_train.shape[2]
     batch_size = settings['batch']
 
     #  INSTANTIATE KERAS TENSOR WITH Input()
     #  model_input = Input(batch_shape=(batch_size, timesteps, input_dim)) input from example
-    model_input = Input(shape=(input_dim, 1))  # TODO: double check Input() not sure it is correct
+    model_input = Input(shape=(input_dim_x, input_dim_y))  # TODO: double check Input() not sure it is correct
 
-    #  INSTANTIATE
+    #  INSTANTIATE MODEL LAYERS
     model_output = add_tcn_layers(model_input, settings)
 
     #  INSTANTIATE MODEL AND ASSIGN INPUT AND OUTPUT
     model = Model(inputs=[model_input], outputs=[model_output])
 
     # COMPILE THE MODEL
-    model.compile(optimizer='adam', loss='mse')
+    model.compile(optimizer=settings['optimizer'], loss=settings['loss'])
 
     #  PRINT MODEL STATS
     tcn_full_summary(model, expand_residual_blocks=False)
