@@ -96,6 +96,12 @@ def long_short_term_memory(data, settings):
     """
 
     #  VARIABLES
+    x_train = data['train']['features']
+    y_train = data['train']['labels']
+    x_validation = data['validation']['features']
+    y_validation = data['validation']['labels']
+    x_test = data['test']['features']
+    scaler = data['scaler']
 
     #  INSTANTIATE MODEL
     model = Sequential()
@@ -117,8 +123,8 @@ def long_short_term_memory(data, settings):
 
     # TRAIN USING TRAIN DATA
     model.fit(
-        data['train']['features'],
-        data['train']['labels'],
+        x_train,
+        y_train,
         epochs=settings['epochs'],
         batch_size=settings['batch'],
 
@@ -128,8 +134,8 @@ def long_short_term_memory(data, settings):
 
         # ADD VALIDATION DATA
         validation_data=(
-            data['validation']['features'],
-            data['validation']['labels']
+            x_validation,
+            y_validation
         ),
 
         # VALIDATE EVERY 25 STEPS
@@ -137,7 +143,8 @@ def long_short_term_memory(data, settings):
     )
 
     # PREDICT USING TEST DATA
-    predictions = model.predict(data['test']['features'])
+    predictions = model.predict(x_test)
+
     #denormalized_predictions = ""
 
     return {
