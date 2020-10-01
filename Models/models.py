@@ -109,12 +109,6 @@ def long_short_term_memory(data, settings):
     #  ADDING LAYERS TO MODEL
     add_layers(model, data, settings)
 
-        # COMPILE THE MODEL
-    model.compile(
-        loss=settings['loss'],
-        optimizer=settings['optimizer']
-    )
-
     # COMPILE THE MODEL
     model.compile(
         loss=settings['loss'],
