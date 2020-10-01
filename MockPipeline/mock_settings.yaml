@@ -98,3 +98,8 @@ ensemble:
             validation: 40
             loss: mean_squared_error
             optimizer: adam
+        - svc:
+            split:
+                train: 0.6
+                test: 0.2
+                validation: 0.2           

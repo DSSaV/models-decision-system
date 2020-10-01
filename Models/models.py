@@ -180,6 +180,36 @@ def temporal_convolutional_network(data, settings):
         'predictions': predictions
     }
 
+def linear_support_vector_classifier(data, settings):
+    """Creates a Linear Support Vector Classifier (Linear SVC) and predictions.
+
+    Args:
+        data: pandas.DataFrame.
+        settings: Dictionary object containing settings parameters, Labels have to be buy/sell/hold or another classification type
+    Returns:
+        A dictionary containing the Linear SVC model and predictions.
+    """
+    
+     #  VARIABLES
+    x_train = data['train']['features']
+    y_train = data['train']['labels']
+    x_test = data['test']['features']
+    scaler = data['scaler']
+
+    # INSTANTIATE MODEL
+    model = LinearSVC()
+    
+    # CREATE PREDICTIONS USING TRAIN DATA
+    model.fit(x_train, y_train)
+    
+    # PREDICTIONS
+    predictions = model.predict(x_test)
+
+    return {
+        'model': model,
+        'predictions': predictions
+    }
+
 
 def train_model(dataset, name, settings):
     # AVAILABLE MODELS
