@@ -39,9 +39,9 @@ def log_return_calculation(dataframe, settings):
     
     Parameters:
         dataframe: pd.dataframe with columns containing values
-        settings: dictionary cotaining lower_threshold and upper_threshold
+        settings: dictionary cotaining lower_threshold and upper_threshold as values between 0 and 1
     Returns:
-        dataframe: pd.dataframe which contains the log return values of the input dataframe
+        dataframe: pd.dataframe which contains the buy/sell/hold decisions calculated from the input dataframe
     """
     # CREATE A DATAFRAME THAT HOLDS THE LOG RETURN VALUES
     dataframe_log = pd.DataFrame()
