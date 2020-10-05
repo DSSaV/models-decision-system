@@ -83,17 +83,23 @@ ensemble:
                 test: 0.2
                 validation: 0.2
             layers:
-                - tcn:
-                    value: 10
-                    activation: relu
+                - tcn:      # Default values included to show what can be customized
+                    nb_filters: 64
+                    nb_stacks: 1
+                    dilations: [1, 2, 4, 8, 16, 32]
+                    padding: 'causal'
+                    use_skip_connections: False
+                    dropout_rate: 0.10
+                    return_sequences: False
+                    activation: 'relu'
                 - dropout:
-                    value: 0.15
+                    value: 0.05
                 - dense:
                     value: 50
                     activation: relu
                 - dense:
                       value: 1
-            epochs: 7
+            epochs: 1
             batch: 4
             validation: 40
             loss: mean_squared_error

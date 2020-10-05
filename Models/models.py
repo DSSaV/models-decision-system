@@ -104,6 +104,7 @@ def long_short_term_memory(data, settings):
         A dictionary containing the LSTM model and predictions.
     """
 
+    # TODO: FIX LABEL LEAKAGE
     #  VARIABLES
     x_train = data['train']['features']
     y_train = data['train']['labels']
@@ -174,7 +175,20 @@ def add_base_layer_to_tcn(name, model_output, settings, index):
 
 
 def add_tcn_layers(model_input, settings):
-    model_output = TCN(return_sequences=False)(model_input)
+    # STARTING LAYER (TCN)
+    tcn_string = ''
+    try:
+        for index, stats in enumerate(settings['layers'][0]['tcn']):
+            # LAYER PROPS
+            value = settings['layers'][0]['tcn'][stats]
+            if list(settings['layers'][0]['tcn'])[-1]:
+                tcn_string += str(stats) + '=' + str(value)
+            else:
+                tcn_string += str(stats) + '=' + str(value) + ','
+        model_output = TCN(tcn_string)(model_input)
+
+    except ValueError:
+        model_output = TCN(return_sequences=False)(model_input)
 
     for index, layer in enumerate(settings['layers']):
 
@@ -214,8 +228,7 @@ def temporal_convolutional_network(data, settings):
     batch_size = settings['batch']
 
     #  INSTANTIATE KERAS TENSOR WITH Input()
-    #  model_input = Input(batch_shape=(batch_size, timesteps, input_dim)) input from example
-    model_input = Input(shape=(input_dim_x, input_dim_y))  # TODO: double check Input() not sure it is correct
+    model_input = Input(shape=(input_dim_x, input_dim_y))
 
     #  INSTANTIATE MODEL LAYERS
     model_output = add_tcn_layers(model_input, settings)
@@ -227,7 +240,7 @@ def temporal_convolutional_network(data, settings):
     model.compile(optimizer=settings['optimizer'], loss=settings['loss'])
 
     #  PRINT MODEL STATS
-    tcn_full_summary(model, expand_residual_blocks=False)
+    #tcn_full_summary(model, expand_residual_blocks=False)
 
     #  TRAIN THE MODEL WITH VALIDATION
     model.fit(x_train, y_train, epochs=settings['epochs'], validation_data=(x_validation, y_validation))
