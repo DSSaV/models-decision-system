@@ -1,14 +1,6 @@
 
 from sklearn.linear_model import LinearRegression
 from sklearn.svm import LinearSVC
-
-#  TODO: REMOVE LATER IF NOT NEEDED
-from sklearn.pipeline import make_pipeline
-from sklearn.model_selection import TimeSeriesSplit
-import numpy as np
-from sklearn import preprocessing
-from sklearn import utils
-
 from tensorflow.python.keras import Sequential, Input, Model
 from tensorflow.python.keras.layers import Dense, LSTM, Dropout
 
@@ -51,6 +43,8 @@ def linear_regression(data, settings):
 
 
 def add_lstm_layer(model, data, index, name, settings):
+    """Support function used to add a Keras Layers to the LSTM model."""
+
     # AVAILABLE LAYERS
     available = {
         'lstm': LSTM,
@@ -84,6 +78,7 @@ def add_lstm_layer(model, data, index, name, settings):
 
 
 def add_lstm_layers(model, data, settings):
+    """Support function that loops through all available Keras Layers."""
     # LOOP THROUGH REQUESTED MODEL LAYERS
     for index, layer in enumerate(settings['layers']):
         # LAYER PROPS
@@ -158,6 +153,7 @@ def long_short_term_memory(data, settings):
 
 
 def add_base_layer_to_tcn(name, model_output, settings, index):
+    """Support function that adds Keras Layers to TCN model."""
     # AVAILABLE LAYERS
     available = {
         'dropout': Dropout,
@@ -175,6 +171,8 @@ def add_base_layer_to_tcn(name, model_output, settings, index):
 
 
 def add_tcn_layers(model_input, settings):
+    """Support function that adds TCN Layer and requested Keras Layers to the TCN model"""
+
     # STARTING LAYER (TCN)
     tcn_string = ''
     try:
