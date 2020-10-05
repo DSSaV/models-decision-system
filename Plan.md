@@ -13,12 +13,13 @@ It should be able to succeed in the following tasks:
 Out initial plan is to implement the following models.
 
 - Linear Regression
-- Forrest
+- [Random Forest Regressor](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html)
 - LSTM
 - [TCNN](https://github.com/philipperemy/keras-tcn)
 - Cross Validation SVR
 - Log Regression
 - Cross Validation SVC
+- [Random Forest Classifier](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html)
 
 This is not a complete list and might change during the span of the copurse.
 

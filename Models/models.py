@@ -1,14 +1,6 @@
 
 from sklearn.linear_model import LinearRegression
 from sklearn.svm import LinearSVC
-
-#  TODO: REMOVE LATER IF NOT NEEDED
-from sklearn.pipeline import make_pipeline
-from sklearn.model_selection import TimeSeriesSplit
-import numpy as np
-from sklearn import preprocessing
-from sklearn import utils
-
 from tensorflow.python.keras import Sequential, Input, Model
 from tensorflow.python.keras.layers import Dense, LSTM, Dropout
 
@@ -51,6 +43,8 @@ def linear_regression(data, settings):
 
 
 def add_lstm_layer(model, data, index, name, settings):
+    """Support function used to add a Keras Layers to the LSTM model."""
+
     # AVAILABLE LAYERS
     available = {
         'lstm': LSTM,
@@ -84,6 +78,7 @@ def add_lstm_layer(model, data, index, name, settings):
 
 
 def add_lstm_layers(model, data, settings):
+    """Support function that loops through all available Keras Layers."""
     # LOOP THROUGH REQUESTED MODEL LAYERS
     for index, layer in enumerate(settings['layers']):
         # LAYER PROPS
@@ -104,6 +99,7 @@ def long_short_term_memory(data, settings):
         A dictionary containing the LSTM model and predictions.
     """
 
+    # TODO: FIX LABEL LEAKAGE
     #  VARIABLES
     x_train = data['train']['features']
     y_train = data['train']['labels']
@@ -157,6 +153,7 @@ def long_short_term_memory(data, settings):
 
 
 def add_base_layer_to_tcn(name, model_output, settings, index):
+    """Support function that adds Keras Layers to TCN model."""
     # AVAILABLE LAYERS
     available = {
         'dropout': Dropout,
@@ -174,7 +171,22 @@ def add_base_layer_to_tcn(name, model_output, settings, index):
 
 
 def add_tcn_layers(model_input, settings):
-    model_output = TCN(return_sequences=False)(model_input)
+    """Support function that adds TCN Layer and requested Keras Layers to the TCN model"""
+
+    # STARTING LAYER (TCN)
+    tcn_string = ''
+    try:
+        for index, stats in enumerate(settings['layers'][0]['tcn']):
+            # LAYER PROPS
+            value = settings['layers'][0]['tcn'][stats]
+            if list(settings['layers'][0]['tcn'])[-1]:
+                tcn_string += str(stats) + '=' + str(value)
+            else:
+                tcn_string += str(stats) + '=' + str(value) + ','
+        model_output = TCN(tcn_string)(model_input)
+
+    except ValueError:
+        model_output = TCN(return_sequences=False)(model_input)
 
     for index, layer in enumerate(settings['layers']):
 
@@ -190,7 +202,6 @@ def add_tcn_layers(model_input, settings):
     return model_output
 
 
-#  TODO: WORKING BUT NEEDS TO BE TWEAKED
 def temporal_convolutional_network(data, settings):
     """Creates a Temporal Convolutional Network model (TCN) and predictions.
 
@@ -214,8 +225,7 @@ def temporal_convolutional_network(data, settings):
     batch_size = settings['batch']
 
     #  INSTANTIATE KERAS TENSOR WITH Input()
-    #  model_input = Input(batch_shape=(batch_size, timesteps, input_dim)) input from example
-    model_input = Input(shape=(input_dim_x, input_dim_y))  # TODO: double check Input() not sure it is correct
+    model_input = Input(shape=(input_dim_x, input_dim_y))
 
     #  INSTANTIATE MODEL LAYERS
     model_output = add_tcn_layers(model_input, settings)
@@ -231,7 +241,6 @@ def temporal_convolutional_network(data, settings):
 
     #  TRAIN THE MODEL WITH VALIDATION
     model.fit(x_train, y_train, epochs=settings['epochs'], validation_data=(x_validation, y_validation))
-    #  https://keras.io/api/models/model_training_apis/#fit-method
 
     # PREDICT USING TEST DATA
     predictions = model.predict(x_test)
