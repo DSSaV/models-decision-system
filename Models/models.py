@@ -204,7 +204,6 @@ def add_tcn_layers(model_input, settings):
     return model_output
 
 
-#  TODO: WORKING BUT NEEDS TO BE TWEAKED
 def temporal_convolutional_network(data, settings):
     """Creates a Temporal Convolutional Network model (TCN) and predictions.
 
@@ -240,11 +239,10 @@ def temporal_convolutional_network(data, settings):
     model.compile(optimizer=settings['optimizer'], loss=settings['loss'])
 
     #  PRINT MODEL STATS
-    #tcn_full_summary(model, expand_residual_blocks=False)
+    tcn_full_summary(model, expand_residual_blocks=False)
 
     #  TRAIN THE MODEL WITH VALIDATION
     model.fit(x_train, y_train, epochs=settings['epochs'], validation_data=(x_validation, y_validation))
-    #  https://keras.io/api/models/model_training_apis/#fit-method
 
     # PREDICT USING TEST DATA
     predictions = model.predict(x_test)
