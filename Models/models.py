@@ -1,4 +1,3 @@
-
 from sklearn.linear_model import LinearRegression
 from sklearn.svm import LinearSVC
 
@@ -116,14 +115,6 @@ def long_short_term_memory(data, settings):
         A dictionary containing the LSTM model and predictions.
     """
 
-    #  VARIABLES
-    # x_train = data['train']['features']
-    # y_train = data['train']['labels']
-    # x_validation = data['validation']['features']
-    # y_validation = data['validation']['labels']
-    # x_test = data['test']['features']
-    # scaler = data['scaler']
-
     #  INSTANTIATE MODEL
     model = Sequential()
 
@@ -158,7 +149,6 @@ def long_short_term_memory(data, settings):
         shuffle=False
     )
 
-    #  TODO:update to use test generator
     #  PREDICT USING TEST DATA
     predictions = model.predict(test_generator)
 
@@ -172,6 +162,7 @@ def long_short_term_memory(data, settings):
 
 def add_base_layer_to_tcn(name, model_output, settings, index):
     """Support function that adds Keras Layers to TCN model."""
+
     # AVAILABLE LAYERS
     available = {
         'dropout': Dropout,
@@ -230,22 +221,21 @@ def temporal_convolutional_network(data, settings):
             A dictionary containing the TCN model and predictions.
         """
 
-    #  VARIABLES
-    x_train = data['train']['features']
-    y_train = data['train']['labels']
-    x_validation = data['validation']['features']
-    y_validation = data['validation']['labels']
-    x_test = data['test']['features']
-    scaler = data['scaler']
-    timesteps = x_train.shape[0]
-    input_dim_x = x_train.shape[1]
-    input_dim_y = x_train.shape[2]
-    batch_size = settings['batch']
+    #  TRAIN DATA GENERATOR
+    train_generator = create_generator(
+        data['train'],
+        settings['morph'],
+        shuffle=True
+    )
+    #  TRAIN DATA GENERATOR
+    test_generator = create_generator(
+        data['test'],
+        settings['morph'],
+        shuffle=True
+    )
 
-    #  TODO: ADD GENERATOR
-
-    #  INSTANTIATE KERAS TENSOR WITH Input()
-    model_input = Input(shape=(input_dim_x, input_dim_y))
+    #  INSTANTIATE KERAS TENSOR INPUT WITH TIMESERIESGENEREATOR SHAPE
+    model_input = Input(batch_shape=train_generator[0][0].shape)
 
     #  INSTANTIATE MODEL LAYERS
     model_output = add_tcn_layers(model_input, settings)
@@ -259,12 +249,16 @@ def temporal_convolutional_network(data, settings):
     #  PRINT MODEL STATS
     tcn_full_summary(model, expand_residual_blocks=False)
 
-    #  TODO: CHNAGE TO fit_generator()
     #  TRAIN THE MODEL WITH VALIDATION
-    model.fit(x_train, y_train, epochs=settings['epochs'], validation_data=(x_validation, y_validation))
+    model.fit_generator(
+        train_generator,
+        steps_per_epoch=len(train_generator),
+        epochs=settings['epochs'],
+        verbose=0
+    )
 
-    # PREDICT USING TEST DATA
-    predictions = model.predict(x_test)
+    #  PREDICT USING TEST DATA
+    predictions = model.predict(test_generator)
 
     return {
         'model': model,

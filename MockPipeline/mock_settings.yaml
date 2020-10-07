@@ -57,6 +57,9 @@ regression_ensemble:
             loss: mean_squared_error
             optimizer: rmsprop
         - tcn:
+            morph:
+                window: 4
+                batch: 30
             layers:
                 - tcn:      # Default values included to show what can be customized
                     nb_filters: 64
