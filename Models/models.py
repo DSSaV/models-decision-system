@@ -1,8 +1,10 @@
 
 from sklearn.linear_model import LinearRegression
 from sklearn.svm import LinearSVC
+
 from tensorflow.python.keras import Sequential, Input, Model
 from tensorflow.python.keras.layers import Dense, LSTM, Dropout
+from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
 
 from tcn import TCN, tcn_full_summary
 
@@ -21,7 +23,6 @@ def linear_regression(data, settings):
     x_train = data['train']['features']
     y_train = data['train']['labels']
     x_test = data['test']['features']
-    scaler = data['scaler']
 
     #  INSTANTIATE MODEL
     linear = LinearRegression()
@@ -32,17 +33,32 @@ def linear_regression(data, settings):
     #  PREDICTIONS
     predictions = model.predict(x_test)
 
-    # TODO: fix denormalization
-    #  DENORMALIZED PREDICTIONS FOR ACTUAL PREDICTION VALUES
-    # denormalized_predictions = scaler.inverse_transform(predictions)
-
     return {
         'model': model,
         'predictions': predictions
     }
 
 
-def add_lstm_layer(model, data, index, name, settings):
+def create_generator(dataset, params, shuffle=True):
+    # DECONSTRUCT DATASET
+    features = dataset['features']
+    labels = dataset['labels']
+
+    # DECONSTRUCT PARAMS
+    batch = params['batch']
+    window = params['window']
+
+    # GENERATE & RETURN
+    return TimeseriesGenerator(
+        features,
+        labels,
+        length=window,
+        batch_size=batch,
+        shuffle=shuffle
+    )
+
+
+def add_lstm_layer(model, data, index, name, settings, shape):
     """Support function used to add a Keras Layers to the LSTM model."""
 
     # AVAILABLE LAYERS
@@ -60,7 +76,7 @@ def add_lstm_layer(model, data, index, name, settings):
         model.add(func(
             settings['value'],
             activation=settings['activation'],
-            input_shape=(data['train']['features'].shape[1], 1)
+            input_shape=(shape[1], shape[2])
         ))
 
     # JUST AN ACTIVATION FUNCTION
@@ -77,8 +93,9 @@ def add_lstm_layer(model, data, index, name, settings):
         ))
 
 
-def add_lstm_layers(model, data, settings):
+def add_lstm_layers(model, data, settings, shape):
     """Support function that loops through all available Keras Layers."""
+
     # LOOP THROUGH REQUESTED MODEL LAYERS
     for index, layer in enumerate(settings['layers']):
         # LAYER PROPS
@@ -86,7 +103,7 @@ def add_lstm_layers(model, data, settings):
         params = layer[name]
 
         # GENERATE & ADD THE LAYER
-        add_lstm_layer(model, data, index, name, params)
+        add_lstm_layer(model, data, index, name, params, shape)
 
 
 def long_short_term_memory(data, settings):
@@ -99,23 +116,26 @@ def long_short_term_memory(data, settings):
         A dictionary containing the LSTM model and predictions.
     """
 
-    #  TODO: FIX LABEL LEAKAGE
     #  VARIABLES
-    x_train = data['train']['features']
-    y_train = data['train']['labels']
-    x_validation = data['validation']['features']
-    y_validation = data['validation']['labels']
-    x_test = data['test']['features']
-    scaler = data['scaler']
+    # x_train = data['train']['features']
+    # y_train = data['train']['labels']
+    # x_validation = data['validation']['features']
+    # y_validation = data['validation']['labels']
+    # x_test = data['test']['features']
+    # scaler = data['scaler']
 
     #  INSTANTIATE MODEL
     model = Sequential()
 
-    #  TODO:TRAIN DATA GENERATOR
-    #  CODE COMES HERE
+    #  TRAIN DATA GENERATOR
+    train_generator = create_generator(
+        data['train'],
+        settings['morph'],
+        shuffle=True
+    )
 
     #  ADDING LAYERS TO MODEL
-    add_lstm_layers(model, data, settings)
+    add_lstm_layers(model, data, settings, train_generator[0][0].shape)
 
     #  COMPILE THE MODEL
     model.compile(
@@ -123,30 +143,24 @@ def long_short_term_memory(data, settings):
         optimizer=settings['optimizer']
     )
 
-    #  TODO: change fit() --> fit_generator()
     #  TRAIN USING TRAIN DATA
-    model.fit(
-        x_train,
-        y_train,
+    model.fit_generator(
+        train_generator,
+        steps_per_epoch=len(train_generator),
         epochs=settings['epochs'],
-        batch_size=settings['batch'],
-
-        #  TODO: REMOVE VALIDATION
-        #  ADD VALIDATION DATA
-        validation_data=(
-            x_validation,
-            y_validation
-        ),
-
-        # VALIDATE EVERY 25 STEPS
-        validation_steps=settings['validation']
+        verbose=0
     )
 
-    #  TODO:TEST DATA GENERATOR
+    #  TEST DATA GENERATOR
+    test_generator = create_generator(
+        data['test'],
+        settings['morph'],
+        shuffle=False
+    )
 
     #  TODO:update to use test generator
     #  PREDICT USING TEST DATA
-    predictions = model.predict(x_test)
+    predictions = model.predict(test_generator)
 
     # denormalized_predictions = ""
 

@@ -36,10 +36,10 @@ splitting:
 regression_ensemble:
     models:
         - linreg:
-            morph:
-                window: 4
-                batch: 30
         - lstm:
+            morph:
+                  window: 4
+                  batch: 30
             layers:
                 - lstm:
                     value: 120
