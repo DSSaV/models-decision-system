@@ -142,7 +142,7 @@ def long_short_term_memory(data, settings):
     }
 
 
-def add_base_layer_to_tcn(name, model_output, settings, index):
+def add_tcn_layer(name, model_output, settings, index):
     """Support function that adds Keras Layers to TCN model."""
 
     # AVAILABLE LAYERS
@@ -153,42 +153,26 @@ def add_base_layer_to_tcn(name, model_output, settings, index):
 
     # SELECT THE CORRECT FUNCTION
     func = available[name]
-
-    if name == 'dropout':
-        return func(settings['value'])(model_output)
-
-    else:
-        return func(settings['value'])(model_output)
+    return func(**settings)(model_output)
 
 
 def add_tcn_layers(model_input, settings):
     """Support function that adds TCN Layer and requested Keras Layers to the TCN model"""
 
-    # STARTING LAYER (TCN)
-    tcn_string = ''
+    layers = settings['layers']
+
     try:
-        for index, stats in enumerate(settings['layers'][0]['tcn']):
-            # LAYER PROPS
-            value = settings['layers'][0]['tcn'][stats]
-            if index == len(list(settings['layers'][0]['tcn']))-1:
-                tcn_string += str(stats) + '=' + str(value)
-            else:
-                tcn_string += str(stats) + '=' + str(value) + ','
-        model_output = TCN(tcn_string)(model_input)
+        model_output = TCN(**settings['layers'][0]['tcn'])(model_input)
+    except ValueError as e:
+        print(e, 'Wrong structure on yaml config file')
 
-    except ValueError:
-        model_output = TCN(return_sequences=False)(model_input)
-
-    for index, layer in enumerate(settings['layers']):
-
-        # LAYER PROPS
+    for index, layer in enumerate(layers):
         name = list(layer)[0]
         params = layer[name]
-
-        if index == 0:
+        if name == 'tcn':
             continue
         else:
-            model_output = add_base_layer_to_tcn(name, model_output, params, index)
+            model_output = add_tcn_layer(name, model_output, params, index)
 
     return model_output
 

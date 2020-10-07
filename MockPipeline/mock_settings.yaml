@@ -84,7 +84,7 @@ regression_ensemble:
                     return_sequences: False
                     activation: 'relu'
                 - dropout:
-                    units: 0.05
+                    rate: 0.05
                 - dense:
                     units: 50
                     activation: relu
