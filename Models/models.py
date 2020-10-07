@@ -99,7 +99,7 @@ def long_short_term_memory(data, settings):
         A dictionary containing the LSTM model and predictions.
     """
 
-    # TODO: FIX LABEL LEAKAGE
+    #  TODO: FIX LABEL LEAKAGE
     #  VARIABLES
     x_train = data['train']['features']
     y_train = data['train']['labels']
@@ -111,27 +111,28 @@ def long_short_term_memory(data, settings):
     #  INSTANTIATE MODEL
     model = Sequential()
 
+    #  TODO:TRAIN DATA GENERATOR
+    #  CODE COMES HERE
+
     #  ADDING LAYERS TO MODEL
     add_lstm_layers(model, data, settings)
 
-    # COMPILE THE MODEL
+    #  COMPILE THE MODEL
     model.compile(
         loss=settings['loss'],
         optimizer=settings['optimizer']
     )
 
-    # TRAIN USING TRAIN DATA
+    #  TODO: change fit() --> fit_generator()
+    #  TRAIN USING TRAIN DATA
     model.fit(
         x_train,
         y_train,
         epochs=settings['epochs'],
         batch_size=settings['batch'],
 
-        # VALIDATION_SPLIT WORKS NORMALLY, BUT SUCKS FOR TIMESERIES
-        # https://www.tensorflow.org/tutorials/structured_data/time_series
-        # goal https://miro.medium.com/max/300/1*R09z6KNJuMkSmRcPApj9cQ.png
-
-        # ADD VALIDATION DATA
+        #  TODO: REMOVE VALIDATION
+        #  ADD VALIDATION DATA
         validation_data=(
             x_validation,
             y_validation
@@ -141,7 +142,10 @@ def long_short_term_memory(data, settings):
         validation_steps=settings['validation']
     )
 
-    # PREDICT USING TEST DATA
+    #  TODO:TEST DATA GENERATOR
+
+    #  TODO:update to use test generator
+    #  PREDICT USING TEST DATA
     predictions = model.predict(x_test)
 
     # denormalized_predictions = ""
@@ -224,6 +228,8 @@ def temporal_convolutional_network(data, settings):
     input_dim_y = x_train.shape[2]
     batch_size = settings['batch']
 
+    #  TODO: ADD GENERATOR
+
     #  INSTANTIATE KERAS TENSOR WITH Input()
     model_input = Input(shape=(input_dim_x, input_dim_y))
 
@@ -239,6 +245,7 @@ def temporal_convolutional_network(data, settings):
     #  PRINT MODEL STATS
     tcn_full_summary(model, expand_residual_blocks=False)
 
+    #  TODO: CHNAGE TO fit_generator()
     #  TRAIN THE MODEL WITH VALIDATION
     model.fit(x_train, y_train, epochs=settings['epochs'], validation_data=(x_validation, y_validation))
 
