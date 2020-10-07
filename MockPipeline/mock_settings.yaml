@@ -77,7 +77,7 @@ regression_ensemble:
                     activation: relu
                 - dense:
                       value: 1
-            epochs: 1
+            epochs: 3
             batch: 4
             validation: 40
             loss: mean_squared_error

@@ -231,7 +231,7 @@ def temporal_convolutional_network(data, settings):
     test_generator = create_generator(
         data['test'],
         settings['morph'],
-        shuffle=True
+        shuffle=False
     )
 
     #  INSTANTIATE KERAS TENSOR INPUT WITH TIMESERIESGENEREATOR SHAPE
