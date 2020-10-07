@@ -71,25 +71,7 @@ def add_lstm_layer(model, data, index, name, settings, shape):
     func = available[name]
 
     # IF AN ACTIVATION IS FOUND & THIS IS THE FIRST LAYER
-    if 'activation' in settings and index == 0:
-        model.add(func(
-            settings['value'],
-            activation=settings['activation'],
-            input_shape=(shape[1], shape[2])
-        ))
-
-    # JUST AN ACTIVATION FUNCTION
-    elif 'activation' in settings:
-        model.add(func(
-            settings['value'],
-            activation=settings['activation']
-        ))
-
-    # OTHERWISE, DEFAULT TO JUST USING THE VALUE
-    else:
-        model.add(func(
-            settings['value']
-        ))
+    model.add(func(**settings))
 
 
 def add_lstm_layers(model, data, settings, shape):
@@ -188,7 +170,7 @@ def add_tcn_layers(model_input, settings):
         for index, stats in enumerate(settings['layers'][0]['tcn']):
             # LAYER PROPS
             value = settings['layers'][0]['tcn'][stats]
-            if list(settings['layers'][0]['tcn'])[-1]:
+            if index == len(list(settings['layers'][0]['tcn']))-1:
                 tcn_string += str(stats) + '=' + str(value)
             else:
                 tcn_string += str(stats) + '=' + str(value) + ','
