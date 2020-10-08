@@ -281,6 +281,45 @@ def linear_support_vector_classifier(data, settings):
         'predictions': predictions
     }
 
+def grid_search_model(model, data, settings):
+    """Runs a grid search on the given model to define the best parameters for the model. 
+    
+    Parameters:
+    -----------
+    model: sklearn model 
+    unfitted model
+    dataset: dict
+    Dictionary that contains x_train, y_train, features and labels
+    
+    Returns:
+    --------
+    model: sklearn model
+    Same type of model as the input model, with optimized parameters
+    """
+    #  VARIABLES
+    x_train = data['train']['features']
+    y_train = data['train']['labels']
+    x_test = data['test']['features']
+    y_test = data['test']['features']
+    x = np.concatenate((x_train, x_test))
+    y = np.concatenate((y_train, y_test))
+    
+    # CREATE GRID SEARCH CV
+    grid_search = GridSearchCV(estimator = model, param_grid = settings["grid_params"], 
+                          cv = settings["cv"], n_jobs = settings["n_jobs"], verbose = 2)
+    
+    # FIT GRIDSEARCH
+    grid_search.fit(x, y)
+    
+    # PICK OUT THE BEST MODEL FROM GRID SEARCH
+    model = grid_search.best_estimator_
+    
+    # RUN MODEL ON BEST PARAMS   
+    model.fit(x_train, y_train)
+    
+    # RETURN MODEL WITH BEST PARAMS    
+    return model
+
 
 def train_model(dataset, name, settings):
     # AVAILABLE MODELS
