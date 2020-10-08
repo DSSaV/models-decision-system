@@ -281,7 +281,7 @@ def grid_search_model(model, data, settings):
     x_train = data['train']['features']
     y_train = data['train']['labels']
     x_test = data['test']['features']
-    y_test = data['test']['features']
+    y_test = data['test']['labels']
     x = np.concatenate((x_train, x_test))
     y = np.concatenate((y_train, y_test))
     
