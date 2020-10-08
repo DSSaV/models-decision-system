@@ -1,8 +1,9 @@
-
 from sklearn.linear_model import LinearRegression
 from sklearn.svm import LinearSVC
+
 from tensorflow.python.keras import Sequential, Input, Model
 from tensorflow.python.keras.layers import Dense, LSTM, Dropout
+from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
 
 from tcn import TCN, tcn_full_summary
 
@@ -21,7 +22,6 @@ def linear_regression(data, settings):
     x_train = data['train']['features']
     y_train = data['train']['labels']
     x_test = data['test']['features']
-    scaler = data['scaler']
 
     #  INSTANTIATE MODEL
     linear = LinearRegression()
@@ -32,17 +32,32 @@ def linear_regression(data, settings):
     #  PREDICTIONS
     predictions = model.predict(x_test)
 
-    # TODO: fix denormalization
-    #  DENORMALIZED PREDICTIONS FOR ACTUAL PREDICTION VALUES
-    # denormalized_predictions = scaler.inverse_transform(predictions)
-
     return {
         'model': model,
         'predictions': predictions
     }
 
 
-def add_lstm_layer(model, data, index, name, settings):
+def create_generator(dataset, params, shuffle=True):
+    # DECONSTRUCT DATASET
+    features = dataset['features']
+    labels = dataset['labels']
+
+    # DECONSTRUCT PARAMS
+    batch = params['batch']
+    window = params['window']
+
+    # GENERATE & RETURN
+    return TimeseriesGenerator(
+        features,
+        labels,
+        length=window,
+        batch_size=batch,
+        shuffle=shuffle
+    )
+
+
+def add_lstm_layer(model, data, index, name, settings, shape):
     """Support function used to add a Keras Layers to the LSTM model."""
 
     # AVAILABLE LAYERS
@@ -56,29 +71,12 @@ def add_lstm_layer(model, data, index, name, settings):
     func = available[name]
 
     # IF AN ACTIVATION IS FOUND & THIS IS THE FIRST LAYER
-    if 'activation' in settings and index == 0:
-        model.add(func(
-            settings['value'],
-            activation=settings['activation'],
-            input_shape=(data['train']['features'].shape[1], 1)
-        ))
-
-    # JUST AN ACTIVATION FUNCTION
-    elif 'activation' in settings:
-        model.add(func(
-            settings['value'],
-            activation=settings['activation']
-        ))
-
-    # OTHERWISE, DEFAULT TO JUST USING THE VALUE
-    else:
-        model.add(func(
-            settings['value']
-        ))
+    model.add(func(**settings))
 
 
-def add_lstm_layers(model, data, settings):
+def add_lstm_layers(model, data, settings, shape):
     """Support function that loops through all available Keras Layers."""
+
     # LOOP THROUGH REQUESTED MODEL LAYERS
     for index, layer in enumerate(settings['layers']):
         # LAYER PROPS
@@ -86,7 +84,7 @@ def add_lstm_layers(model, data, settings):
         params = layer[name]
 
         # GENERATE & ADD THE LAYER
-        add_lstm_layer(model, data, index, name, params)
+        add_lstm_layer(model, data, index, name, params, shape)
 
 
 def long_short_term_memory(data, settings):
@@ -99,50 +97,42 @@ def long_short_term_memory(data, settings):
         A dictionary containing the LSTM model and predictions.
     """
 
-    # TODO: FIX LABEL LEAKAGE
-    #  VARIABLES
-    x_train = data['train']['features']
-    y_train = data['train']['labels']
-    x_validation = data['validation']['features']
-    y_validation = data['validation']['labels']
-    x_test = data['test']['features']
-    scaler = data['scaler']
-
     #  INSTANTIATE MODEL
     model = Sequential()
 
-    #  ADDING LAYERS TO MODEL
-    add_lstm_layers(model, data, settings)
+    #  TRAIN DATA GENERATOR
+    train_generator = create_generator(
+        data['train'],
+        settings['morph'],
+        shuffle=True
+    )
 
-    # COMPILE THE MODEL
+    #  ADDING LAYERS TO MODEL
+    add_lstm_layers(model, data, settings, train_generator[0][0].shape)
+
+    #  COMPILE THE MODEL
     model.compile(
         loss=settings['loss'],
         optimizer=settings['optimizer']
     )
 
-    # TRAIN USING TRAIN DATA
-    model.fit(
-        x_train,
-        y_train,
+    #  TRAIN USING TRAIN DATA
+    model.fit_generator(
+        train_generator,
+        steps_per_epoch=len(train_generator),
         epochs=settings['epochs'],
-        batch_size=settings['batch'],
-
-        # VALIDATION_SPLIT WORKS NORMALLY, BUT SUCKS FOR TIMESERIES
-        # https://www.tensorflow.org/tutorials/structured_data/time_series
-        # goal https://miro.medium.com/max/300/1*R09z6KNJuMkSmRcPApj9cQ.png
-
-        # ADD VALIDATION DATA
-        validation_data=(
-            x_validation,
-            y_validation
-        ),
-
-        # VALIDATE EVERY 25 STEPS
-        validation_steps=settings['validation']
+        verbose=0
     )
 
-    # PREDICT USING TEST DATA
-    predictions = model.predict(x_test)
+    #  TEST DATA GENERATOR
+    test_generator = create_generator(
+        data['test'],
+        settings['morph'],
+        shuffle=False
+    )
+
+    #  PREDICT USING TEST DATA
+    predictions = model.predict(test_generator)
 
     # denormalized_predictions = ""
 
@@ -152,8 +142,9 @@ def long_short_term_memory(data, settings):
     }
 
 
-def add_base_layer_to_tcn(name, model_output, settings, index):
+def add_tcn_layer(name, model_output, settings, index):
     """Support function that adds Keras Layers to TCN model."""
+
     # AVAILABLE LAYERS
     available = {
         'dropout': Dropout,
@@ -162,42 +153,26 @@ def add_base_layer_to_tcn(name, model_output, settings, index):
 
     # SELECT THE CORRECT FUNCTION
     func = available[name]
-
-    if name == 'dropout':
-        return func(settings['value'])(model_output)
-
-    else:
-        return func(settings['value'])(model_output)
+    return func(**settings)(model_output)
 
 
 def add_tcn_layers(model_input, settings):
     """Support function that adds TCN Layer and requested Keras Layers to the TCN model"""
 
-    # STARTING LAYER (TCN)
-    tcn_string = ''
+    layers = settings['layers']
+
     try:
-        for index, stats in enumerate(settings['layers'][0]['tcn']):
-            # LAYER PROPS
-            value = settings['layers'][0]['tcn'][stats]
-            if list(settings['layers'][0]['tcn'])[-1]:
-                tcn_string += str(stats) + '=' + str(value)
-            else:
-                tcn_string += str(stats) + '=' + str(value) + ','
-        model_output = TCN(tcn_string)(model_input)
+        model_output = TCN(**settings['layers'][0]['tcn'])(model_input)
+    except ValueError as e:
+        print(e, 'Wrong structure on yaml config file')
 
-    except ValueError:
-        model_output = TCN(return_sequences=False)(model_input)
-
-    for index, layer in enumerate(settings['layers']):
-
-        # LAYER PROPS
+    for index, layer in enumerate(layers):
         name = list(layer)[0]
         params = layer[name]
-
-        if index == 0:
+        if name == 'tcn':
             continue
         else:
-            model_output = add_base_layer_to_tcn(name, model_output, params, index)
+            model_output = add_tcn_layer(name, model_output, params, index)
 
     return model_output
 
@@ -212,20 +187,21 @@ def temporal_convolutional_network(data, settings):
             A dictionary containing the TCN model and predictions.
         """
 
-    #  VARIABLES
-    x_train = data['train']['features']
-    y_train = data['train']['labels']
-    x_validation = data['validation']['features']
-    y_validation = data['validation']['labels']
-    x_test = data['test']['features']
-    scaler = data['scaler']
-    timesteps = x_train.shape[0]
-    input_dim_x = x_train.shape[1]
-    input_dim_y = x_train.shape[2]
-    batch_size = settings['batch']
+    #  TRAIN DATA GENERATOR
+    train_generator = create_generator(
+        data['train'],
+        settings['morph'],
+        shuffle=True
+    )
+    #  TRAIN DATA GENERATOR
+    test_generator = create_generator(
+        data['test'],
+        settings['morph'],
+        shuffle=False
+    )
 
-    #  INSTANTIATE KERAS TENSOR WITH Input()
-    model_input = Input(shape=(input_dim_x, input_dim_y))
+    #  INSTANTIATE KERAS TENSOR INPUT WITH TIMESERIESGENEREATOR SHAPE
+    model_input = Input(batch_shape=train_generator[0][0].shape)
 
     #  INSTANTIATE MODEL LAYERS
     model_output = add_tcn_layers(model_input, settings)
@@ -240,10 +216,15 @@ def temporal_convolutional_network(data, settings):
     tcn_full_summary(model, expand_residual_blocks=False)
 
     #  TRAIN THE MODEL WITH VALIDATION
-    model.fit(x_train, y_train, epochs=settings['epochs'], validation_data=(x_validation, y_validation))
+    model.fit_generator(
+        train_generator,
+        steps_per_epoch=len(train_generator),
+        epochs=settings['epochs'],
+        verbose=0
+    )
 
-    # PREDICT USING TEST DATA
-    predictions = model.predict(x_test)
+    #  PREDICT USING TEST DATA
+    predictions = model.predict(test_generator)
 
     return {
         'model': model,
