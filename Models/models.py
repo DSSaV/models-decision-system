@@ -1,5 +1,16 @@
+import numpy as np
+
 from sklearn.linear_model import LinearRegression
-from sklearn.svm import LinearSVC
+from sklearn.svm import LinearSVC, SVC
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
+#  TODO:REMOVE IF NOT NEEDED
+from sklearn.metrics import classification_report
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn import datasets
+from sklearn.linear_model import LogisticRegression
+from pprint import pprint
+from sklearn import metrics
 
 from tensorflow.python.keras import Sequential, Input, Model
 from tensorflow.python.keras.layers import Dense, LSTM, Dropout
