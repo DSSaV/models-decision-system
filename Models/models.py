@@ -276,6 +276,66 @@ def grid_search_model(model, data, settings):
     --------
     model: sklearn model
     Same type of model as the input model, with optimized parameters
+    
+    
+    Example dicts:
+    --------------
+    
+    Random Forest:
+    --------------
+    grid_settings = {
+        "cv": 3, # number of folds
+        "n_jobs": -1, # processors to use during grid search
+        'grid_params': { # parameters for grid search (specific to each model)
+            'n_estimators': [10,50,100,300], # int
+            'max_features': ['log2', 'sqrt'], # {“sqrt”, “log2”}, int or float
+            'max_depth': [10,100, None], # int, default=None
+            'min_samples_split': [3, 10], # int or float, default=2
+            'min_samples_leaf': [2, 4], # int or float, default=1
+            'bootstrap': [True, False], # bool, default=True
+            "class_weight": ["balanced"] # {“balanced”, “balanced_subsample”}, dict or list of dicts, default=None
+        }
+    }
+    
+    Logistical Regression:
+    ----------------------
+    grid_settings = {
+        "cv": 3, # number of folds
+        "n_jobs": -1, # processors to use during grid search
+        'grid_params': {
+            "C": [0.001, 0.1, 1,10,100,1000],
+            "penalty": ["l1", "l2", "elasticnet", "none"],
+            "solver": ["lbfgs", "sag", "newton-cg"],
+            "multi_class": ["ovr", "auto", "multinomial"],
+            "max_iter": [100,1000, 10000],
+            "class_weight": ["balanced"]
+        }
+    }
+    
+    Gaussian Naive Bayes:
+    ---------------------
+    grid_settings = {
+        "cv": 3, # number of folds
+        "n_jobs": -1, # processors to use during grid search
+        "grid_params":{
+            "var_smoothing": [1e-9, 1e-10, 1e-5]
+        }
+    }
+    
+    Complementary Naive Bayes:
+    --------------------------
+    grid_settings = {
+        "cv": 3, # number of folds
+        "n_jobs": -1, # processors to use during grid search
+        "grid_params":{
+
+            "alpha": [0.5, 1],
+            "norm": [True, False],
+
+        }
+    }
+    
+    
     """
     #  VARIABLES
     x_train = data['train']['features']
