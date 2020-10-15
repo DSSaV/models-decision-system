@@ -1,3 +1,6 @@
+import numpy as np
+import pandas as pd
+
 
 def decision(values, settings):
     """Suplementary function to log_return_calculation
@@ -31,6 +34,7 @@ def decision(values, settings):
             data.append("hold")
             
     return data
+
 
 def log_return_calculation(dataframe, settings):
     """
